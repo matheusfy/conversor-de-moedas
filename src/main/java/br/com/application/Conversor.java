@@ -2,36 +2,44 @@ package br.com.application;
 
 import br.com.controllers.HttpclientController;
 import br.com.models.ConvertionRec;
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 
 public class Conversor {
 
-    private HttpclientController __exchangeController;
+    private static final Logger logger = Logger.getLogger(Conversor.class.getName());
+    private final HttpclientController __exchangeController;
     private Map<String, Double> __hshCurrency;
     public List<ConvertionRec> lstConvertionHistory;
 
+    private final JsonHandler jsonHandler;
+
+
     public Conversor() {
-        this.__exchangeController = new HttpclientController(System.getenv("ExchangeUri"));
+        this.__exchangeController = new HttpclientController(System.getenv("ExchangeListUri"), System.getenv("PairConversionUri"));
         this.__hshCurrency             = null;
         this.lstConvertionHistory = new ArrayList<>();
+        this.jsonHandler                 = new JsonHandler();
     }
 
     public void init() {
         try {
 
             this.__hshCurrency = getExchange();
+
             if (this.__hshCurrency == null) {
-                // Logar que houve problema em obter a resposta da API
+                logger.log(Level.WARNING, "Falha na comunicação com a API");
             }
         } catch (IOException | InterruptedException e) {
-            System.out.println("Falha na inicialização");
+            logger.log(Level.SEVERE, "Exception: Ocorreu um problema inesperado. " + e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -44,11 +52,11 @@ public class Conversor {
 
         Map<String, Double> result = null;
 
-        __exchangeController.createExchangeRequest();
-        HttpResponse<String> response = __exchangeController.requestExchange();
+        HttpResponse<String> response = __exchangeController.requestExchangeList();
 
         if (response != null) {
-            JsonObject currencyListJson = responseToJson(response);
+
+            JsonObject currencyListJson =   jsonHandler.getConversionRateAsJson(jsonHandler.parseResponseBody(response));
             result = mapCurrencyToHash(currencyListJson);
         }
 
@@ -69,51 +77,65 @@ public class Conversor {
         return  hshCurrency;
     }
 
-    private Double calculateConversion(String originCurrency, String destinyCurrency, Double value){
-
-        Double value1 = __hshCurrency.get(originCurrency);
-        Double value2 = __hshCurrency.get(destinyCurrency);
-        Double calculatedValue = (value2/value1) * value;
-
-        return calculatedValue;
+    /**
+     * @param c1 : Source currency
+     * @param c2: Target currency
+     * @return : ExchangeRate to convert currency value to another currency value
+     */
+    private Double calculateExchangeRate(String c1, String c2){
+        return __hshCurrency.get(c2)/__hshCurrency.get(c1);
     }
 
-    private JsonObject responseToJson(HttpResponse<String> response){
-
-//        TODO: Criar uma classe para manipular json
-        Gson gson = new Gson();
-        String bodyAsString  = gson.toJson(response.body()); // Body sem formatação de Json
-
-        String parsedBodyString = JsonParser.parseString(bodyAsString).getAsString();
-        JsonElement parsedBody = JsonParser.parseString(parsedBodyString);
-        JsonObject jsonBody = parsedBody.getAsJsonObject().getAsJsonObject("conversion_rates"); // Transforming String que foi formatted no format Json para um object Json de fact
-
-        return jsonBody;
+    private Double calculateConversion(Double value, Double conversionRate){
+        return value * conversionRate;
     }
 
-    public String convertCurrency(String originCurrency, String destinyCurrency, Double value){
+    public void convertCurrency(String sourceCurrency, String targetCurrency, Double value){
 
         try {
-            if (isValidCurrency(originCurrency) && isValidCurrency(destinyCurrency)) {
+            if (isValidCurrency(sourceCurrency) && isValidCurrency(targetCurrency)) {
+
                 if (value >= 0) {
-                    System.out.println("\nConvertendo de %s para %s.".formatted(originCurrency, destinyCurrency));
 
-                    var calculatedValue = calculateConversion(originCurrency, destinyCurrency, value);
+                    System.out.println("\n Convertendo de %s para %s.".formatted(sourceCurrency, targetCurrency));
 
-                    System.out.println("Valor calculado de %s/%s = %f".formatted(originCurrency, destinyCurrency, calculatedValue));
 
-                    lstConvertionHistory.add(new ConvertionRec(originCurrency, destinyCurrency, value, calculatedValue));
+                    Double exchangeRate = getExchangeRate(sourceCurrency, targetCurrency);
+                    Double calculatedValue = calculateConversion(value, exchangeRate);
+
+                    logger.log(Level.INFO, "Valor calculado de %s/%s = %f".formatted(sourceCurrency, targetCurrency, calculatedValue));
+
+                    lstConvertionHistory.add(new ConvertionRec(sourceCurrency, targetCurrency, value, calculatedValue, exchangeRate, LocalDateTime.now()));
+
+                    System.out.println("Conversão feita com sucesso");
+
+                } else {
+                    System.out.println("Não é possivel realizar conversão com valor negativa");
                 }
-                return "Não é possivel realizar conversão com valor negativa";
             }
-        } catch (Exception e ){
-            System.out.println("houve um erro");
+        } catch (Exception error ){
+            logger.log(Level.SEVERE, "Exception: ocorreu um erro inesperado no calculo da conversão. " + error.getMessage());
         }
 
-        return "Moeda inválida";
+        System.out.println("Moeda inválida");
     }
 
-    public String getConvertionHistory() {
+    private Double getExchangeRate(String currency1, String currency2){
+        Double conversionRate;
+        try {
+
+            HttpResponse response = __exchangeController.requestPairConversion(currency1, currency2);
+            conversionRate = jsonHandler.getConvertionRateAsDouble(jsonHandler.parseResponseBody(response), "conversion_rate") ;
+
+        } catch (Exception error) {
+            System.out.println("Exception: Houve algum problema na solicitação da taxa de conversão. Realizando o calculo localmente com valor histórico. " + error.getMessage());
+            conversionRate = calculateExchangeRate(currency1, currency2);
+        }
+
+        return conversionRate;
+    }
+
+    public String getConversionHistory() {
         String convertionHistory = "Historico de conversão: \n";
         if(lstConvertionHistory.isEmpty())
         {
@@ -134,4 +156,5 @@ public class Conversor {
             System.out.println("currency: "+ currency.getKey() + " rate: "+ currency.getValue());
         }
     }
+
 }
