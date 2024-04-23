@@ -7,8 +7,18 @@ import java.util.Scanner;
 public class App {
     public static void main(String[] args) {
 
+
         Conversor conversorMoedas = new Conversor();
+
         conversorMoedas.init();
+        userChoice(conversorMoedas);
+
+    }
+
+    public static void userChoice(Conversor conversorMoedas){
+        
+        Scanner scanner = new Scanner(System.in);
+        var entrada = 1;
 
         String consoleText = """
                 1 - Listar moedas aceitas para conversão.
@@ -16,9 +26,6 @@ public class App {
                 3 - Mostre o histórico de conversões.
                 4 - Digite 4 ou um numero negativo para encerrar.
                 """;
-
-        Scanner scanner = new Scanner(System.in);
-        var entrada = 1;
 
         while(entrada > 0)
         {
@@ -41,10 +48,10 @@ public class App {
                     System.out.println("Insira valor para conversão: ");
                     Double value = scanner.nextDouble();
 
-                    System.out.println(conversorMoedas.convertCurrency(currency1, currency2, value));
+                    conversorMoedas.convertCurrency(currency1, currency2, value);
                     break;
                 case 3:
-                    System.out.println("\n" + conversorMoedas.getConvertionHistory());
+                    System.out.println("\n" + conversorMoedas.getConversionHistory());
                     break;
                 case 4:
                     entrada = -1;
@@ -55,8 +62,5 @@ public class App {
                     break;
             }
         }
-
-
-
     }
 }
