@@ -1,5 +1,6 @@
 package br.com.application;
 
+import br.com.connection.Connectiondb;
 import br.com.controllers.HttpclientController;
 import br.com.models.ConvertionRec;
 import com.google.gson.JsonElement;
@@ -7,6 +8,7 @@ import com.google.gson.JsonObject;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Level;
@@ -16,11 +18,16 @@ import java.util.logging.Logger;
 public class Conversor {
 
     private static final Logger logger = Logger.getLogger(Conversor.class.getName());
-    private final HttpclientController __exchangeController;
-    private Map<String, Double> __hshCurrency;
-    public List<ConvertionRec> lstConvertionHistory;
 
+    private final HttpclientController __exchangeController;
     private final JsonHandler jsonHandler;
+
+    private          Map<String, Double> __hshCurrency;
+    private          Connectiondb dbManager;
+
+    public            List<ConvertionRec> lstConvertionHistory;
+
+
 
 
     public Conversor() {
@@ -28,17 +35,19 @@ public class Conversor {
         this.__hshCurrency             = null;
         this.lstConvertionHistory = new ArrayList<>();
         this.jsonHandler                 = new JsonHandler();
+        this.dbManager = new Connectiondb();
     }
 
     public void init() {
         try {
-
             this.__hshCurrency = getExchange();
+            dbManager.testConnection();
+            dbManager.loadConversionHistory(lstConvertionHistory);
 
             if (this.__hshCurrency == null) {
                 logger.log(Level.WARNING, "Falha na comunicação com a API");
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException | InterruptedException | SQLException e) {
             logger.log(Level.SEVERE, "Exception: Ocorreu um problema inesperado. " + e.getMessage());
             throw new RuntimeException(e);
         }
@@ -97,7 +106,7 @@ public class Conversor {
 
                 if (value >= 0) {
 
-                    System.out.println("\n Convertendo de %s para %s.".formatted(sourceCurrency, targetCurrency));
+                    System.out.println("Convertendo de %s para %s.".formatted(sourceCurrency, targetCurrency));
 
 
                     Double exchangeRate = getExchangeRate(sourceCurrency, targetCurrency);
@@ -105,19 +114,22 @@ public class Conversor {
 
                     logger.log(Level.INFO, "Valor calculado de %s/%s = %f".formatted(sourceCurrency, targetCurrency, calculatedValue));
 
-                    lstConvertionHistory.add(new ConvertionRec(sourceCurrency, targetCurrency, value, calculatedValue, exchangeRate, LocalDateTime.now()));
+                    ConvertionRec convertionRec = new ConvertionRec(sourceCurrency, targetCurrency, value, calculatedValue, exchangeRate, LocalDateTime.now());
+                    lstConvertionHistory.add(convertionRec);
 
-                    System.out.println("Conversão feita com sucesso");
+                    dbManager.saveConversion(convertionRec);
+                    System.out.println("Conversão feita com sucesso: " + convertionRec.toString());
 
                 } else {
                     System.out.println("Não é possivel realizar conversão com valor negativa");
                 }
+            } else {
+                System.out.println("Moeda inválida");
             }
         } catch (Exception error ){
             logger.log(Level.SEVERE, "Exception: ocorreu um erro inesperado no calculo da conversão. " + error.getMessage());
         }
 
-        System.out.println("Moeda inválida");
     }
 
     private Double getExchangeRate(String currency1, String currency2){
