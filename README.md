@@ -8,7 +8,13 @@ Desenvolver um Conversor de Moedas que ofereça interação textual (via console
 > - `ExchangeListUri`:  https<nolink>://v6.exchangerate-api.com/v6/API_KEY/latest/USD
 > - `PairConversionUri`: https<nolink>://v6.exchangerate-api.com/v6/API_KEY/pair/%s/%s/
 > - `API_KEY`: Você pode obter chave para a conexão clicando neste [link](https://app.exchangerate-api.com/dashboard)
-> 
+
+## Configuração Banco de dados
+
+- `user`: **postgres**
+- `password`: **1234** (caso não queira colocar senha não há necessidades **Apenas para finalidade de teste**)
+- `nome da base`: **br-com-conversion**
+
 ## 🔨 Funcionalidades do projeto
 
 - `Funcionalidade 1` `Listar moedas`: Nosso sistema carregará de uma API de terceiros uma lista de moedas e seus respectivo valores atrelados ao Dólar. Nisso o usuário terá a opção de visualização das moedas disponíveis.
@@ -23,6 +29,7 @@ Desenvolver um Conversor de Moedas que ofereça interação textual (via console
 - ``InteliJ IDEA``
 - ``Paradigma de orientação a objetos``
 - ``Gradle``
+- ``Postgres``
 
 ## 📁 Acesso ao projeto
 Você pode acessar os arquivos do projeto clicando [aqui](https://github.com/matheusfy/conversor-de-moedas/tree/main/src/main/java/br/com).
