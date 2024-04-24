@@ -1,4 +1,4 @@
-![Template Alura](https://github.com/matheusfy/conversor-de-moedas/tree/main/Template)
+![Template Alura](https://raw.githubusercontent.com/matheusfy/conversor-de-moedas/main/Template/ThumbnailGitHub.png)
 
 
 # Resumo do projeto
