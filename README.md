@@ -1,4 +1,4 @@
-![Template Alura](https://github.com/gui-lirasilva/Edige-POO/blob/master/Template/Thumbnails%20GitHub.png?raw=true)
+![Template Alura](https://github.com/matheusfy/conversor-de-moedas/tree/main/Template)
 
 
 # Resumo do projeto
