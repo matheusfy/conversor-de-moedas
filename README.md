@@ -15,6 +15,9 @@ Desenvolver um Conversor de Moedas que ofereça interação textual (via console
 - `password`: **1234** (caso não queira colocar senha não há necessidades **Apenas para finalidade de teste**)
 - `nome da base`: **br-com-conversion**
 
+> OBS2: A integração com o banco de dados foi para aperfeiçoar o Challenge oferecido e adicionar funcionalidades que representam melhor o mundo real.
+
+
 ## 🔨 Funcionalidades do projeto
 
 - `Funcionalidade 1` `Listar moedas`: Nosso sistema carregará de uma API de terceiros uma lista de moedas e seus respectivo valores atrelados ao Dólar. Nisso o usuário terá a opção de visualização das moedas disponíveis.
