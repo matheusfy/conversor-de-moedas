@@ -1,4 +1,4 @@
-package br.com.application;
+package br.com.usecase;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;

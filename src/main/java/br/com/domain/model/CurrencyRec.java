@@ -1,4 +1,4 @@
-package br.com.models;
+package br.com.domain.model;
 
 public record CurrencyRec(
         String currency,

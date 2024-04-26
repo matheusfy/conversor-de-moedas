@@ -1,6 +1,6 @@
-package br.com.connection;
+package br.com.adapters.out;
 
-import br.com.models.ConvertionRec;
+import br.com.domain.model.ConvertionRec;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -29,7 +29,7 @@ public class Connectiondb {
         }
     }
 
-    public void testConnection() throws SQLException {
+    public void initConnection() throws SQLException {
         Statement stmt =  conn.createStatement();
         String sql = "CREATE TABLE IF NOT EXISTS conversionhistory ("
                 + "id serial PRIMARY KEY,"
@@ -98,7 +98,7 @@ public class Connectiondb {
             preparedStatement.execute();
             preparedStatement.close();
         } catch (SQLException e) {
-            System.out.println("Erro na etapa de salvar o sql no banco. " + e.getMessage());
+            System.out.println("Erro na etapa de salvar o registro  no banco. " + e.getMessage());
         }
 
     }

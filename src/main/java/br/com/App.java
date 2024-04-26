@@ -1,31 +1,20 @@
 package br.com;
 
-import br.com.application.Conversor;
-import br.com.connection.Connectiondb;
+import br.com.usecase.ConversorUseCase;
 
-import java.sql.SQLException;
 import java.util.Scanner;
 
 public class App {
     public static void main(String[] args) {
 
-
-//        testando conexão com o banco
-
-        Conversor conversorMoedas = new Conversor();
-        conversorMoedas.init();
-        userChoice(conversorMoedas);
+        ConversorUseCase conversor = new ConversorUseCase();
+        conversor.init();
+        userChoice(conversor);
 
     }
 
-    public static Double getInput(Scanner scanner){
-        scanner.nextLine();
-        System.out.println("Insira valor para conversão: ");
-        Double value = scanner.nextDouble();
-        return value;
-    }
 
-    public static void userChoice(Conversor conversorMoedas){
+    public static void userChoice(ConversorUseCase conversor){
         
         Scanner scanner = new Scanner(System.in);
         var entrada = 1;
@@ -51,25 +40,25 @@ public class App {
             entrada = scanner.nextInt();
             switch (entrada){
                 case 1:
-                    conversorMoedas.showCurrencyList();
+                    conversor.showCurrencyList();
                     break;
                 case 2:
-                    conversorMoedas.convertCurrency("USD", "BRL", getInput(scanner));
+                    conversor.convertCurrency("USD", "BRL", getInput(scanner));
                     break;
                 case 3:
-                    conversorMoedas.convertCurrency("BRL", "USD", getInput(scanner));
+                    conversor.convertCurrency("BRL", "USD", getInput(scanner));
                     break;
                 case 4:
-                    conversorMoedas.convertCurrency("BRL", "KRW", getInput(scanner));
+                    conversor.convertCurrency("BRL", "KRW", getInput(scanner));
                     break;
                 case 5:
-                    conversorMoedas.convertCurrency("KRW", "BRL", getInput(scanner));
+                    conversor.convertCurrency("KRW", "BRL", getInput(scanner));
                     break;
                 case 6:
-                    conversorMoedas.convertCurrency("USD", "KRW", getInput(scanner));
+                    conversor.convertCurrency("USD", "KRW", getInput(scanner));
                     break;
                 case 7:
-                    conversorMoedas.convertCurrency("KRW", "USD", getInput(scanner));
+                    conversor.convertCurrency("KRW", "USD", getInput(scanner));
                     break;
 
                 case 8:
@@ -85,10 +74,10 @@ public class App {
                     System.out.println("Insira valor para conversão: ");
                     Double value = scanner.nextDouble();
 
-                    conversorMoedas.convertCurrency(currency1, currency2, value);
+                    conversor.convertCurrency(currency1, currency2, value);
                     break;
                 case 9:
-                    System.out.println("\n" + conversorMoedas.getConversionHistory());
+                    System.out.println("\n" + conversor.getConversionHistory());
                     break;
                 case 10:
                     entrada = -1;
@@ -99,5 +88,12 @@ public class App {
                     break;
             }
         }
+    }
+
+    public static Double getInput(Scanner scanner){
+        scanner.nextLine();
+        System.out.println("Insira valor para conversão: ");
+        Double value = scanner.nextDouble();
+        return value;
     }
 }
