@@ -2,11 +2,13 @@ package br.com.usecase;
 
 import br.com.adapters.out.Connectiondb;
 import br.com.adapters.out.HttpclientController;
-import br.com.domain.exception.InvalidConversionValue;
-import br.com.domain.exception.InvalidCurrencyException;
+import br.com.domain.exceptions.conversorexception.InvalidConversionValue;
+import br.com.domain.exceptions.conversorexception.InvalidCurrencyException;
+import br.com.domain.exceptions.conversorexception.InvalidCurrencyHashException;
+import br.com.domain.exceptions.jsonhandlerexception.InvalidJsonConversion;
+import br.com.domain.exceptions.requestexception.InvalidRequestException;
 import br.com.domain.model.ConvertionRec;
 
-import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -45,7 +47,7 @@ public class ConversorUseCase {
             dbManager.initConnection();
             dbManager.loadConversionHistory(lstConvertionHistory);
 
-        } catch (IOException | InterruptedException | SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
@@ -54,21 +56,28 @@ public class ConversorUseCase {
         return hshCurrency.containsKey(key);
     }
 
-    private  Map<String, Double> getExchangeAsHash() throws IOException, InterruptedException {
+    private  Map<String, Double> getExchangeAsHash(){
 
         Map<String, Double> exchangeHash = null;
-
         HttpResponse<String> response = exchangeController.requestExchangeList();
+        try {
 
-        if (exchangeController.isValidResponse(response)) {
-            exchangeHash = jsonHandler.responseToHash(response);
+            if (exchangeController.isValidResponse(response)) {
+                System.out.println(response.statusCode());
+                exchangeHash = jsonHandler.responseToHash(response);
 
-            if (!exchangeHash.isEmpty()){
-                currencyListLoaded = true;
+                if (!exchangeHash.isEmpty()){
+                    currencyListLoaded = true;
+                }
+            } else {
+                System.out.println("Response msg:" + response.toString());
+                throw new InvalidRequestException("Requisição invalida. Status code:" + response.statusCode());
             }
+        } catch (InvalidJsonConversion | InvalidRequestException error) {
+            System.out.println(error.getMessage());
+        } finally {
+            return exchangeHash;
         }
-
-        return exchangeHash;
     }
 
     private Double calculateExchangeRate(String c1, String c2){
@@ -79,7 +88,7 @@ public class ConversorUseCase {
         return value * conversionRate;
     }
 
-    public void convertCurrency(String sourceCurrency, String targetCurrency, Double value) throws InvalidConversionValue, InvalidCurrencyException {
+    public void convertCurrency(String sourceCurrency, String targetCurrency, Double value) throws InvalidConversionValue, InvalidCurrencyException{
         String exceptionMsg = "";
 
             if (canConvert(sourceCurrency,targetCurrency)) {
@@ -105,12 +114,15 @@ public class ConversorUseCase {
 
                 } else {
                     exceptionMsg = "Não é possivel realizar conversão com valor negativa %f".formatted(value);
-                    throw new InvalidConversionValue(exceptionMsg);
+                    System.out.println(new InvalidConversionValue(exceptionMsg).getMessage());
                 }
             } else {
-                exceptionMsg = "Conversão inválida. Verifique se as moedas existem: : %s, %s".formatted(sourceCurrency, targetCurrency);
-                verifyCurrencyHash();
-                throw new InvalidCurrencyException(exceptionMsg);
+
+                //TODO: Converter esta mensagem de conversão invalida para mensagem de Error
+                exceptionMsg = "Conversão inválida. Verifique se as moedas existem: %s, %s".formatted(sourceCurrency, targetCurrency);
+                tryGetCurrencyHash();
+
+                System.out.println(new InvalidCurrencyException(exceptionMsg).getMessage());
             }
     }
 
@@ -122,7 +134,7 @@ public class ConversorUseCase {
             conversionRate = jsonHandler.getConvertionRateAsDouble(jsonHandler.parseResponseBody(response), "conversion_rate") ;
 
         } catch (Exception error) {
-            System.out.println("Exception: Houve algum problema na solicitação da taxa de conversão. Realizando o calculo localmente com valor histórico. " + error.getMessage());
+            System.out.println("Houve algum problema na solicitação da taxa de conversão. Realizando o calculo localmente com valor histórico. " + error.getMessage());
             conversionRate = calculateExchangeRate(currency1, currency2);
         }
 
@@ -145,29 +157,35 @@ public class ConversorUseCase {
 
     }
 
-    public void  showCurrencyList(){
+    public void  showCurrencyList() throws InvalidCurrencyHashException {
 
-        for(Map.Entry<String, Double> currency: hshCurrency.entrySet()){
-            System.out.println("currency: "+ currency.getKey() + " rate: "+ currency.getValue());
+        if (isValidHash()){
+            for(Map.Entry<String, Double> currency: hshCurrency.entrySet()){
+                System.out.println("currency: "+ currency.getKey() + " rate: "+ currency.getValue());
+            }
+        } else {
+            tryGetCurrencyHash();
+            if(!isValidHash()){
+                throw new InvalidCurrencyHashException("Não possuimos a lista de ativos.");
+            }
         }
     }
 
-    private void  verifyCurrencyHash() {
+
+    private void tryGetCurrencyHash() {
         int MAX_ATEMPT = 3;
 
         if(!isValidHash()) {
-            try {
-                int tentativas = 0;
-                while(tentativas<MAX_ATEMPT && !isValidHash()){
-                    hshCurrency = getExchangeAsHash();
-                    tentativas++;
-                }
+            System.out.println("Buscando lista de moedas.");
+            int tentativas = 0;
+            while(tentativas<MAX_ATEMPT && !isValidHash()){
+                System.out.println("Tentativa %i de buscar lista de moedas: ".formatted((tentativas + 1)));
+                hshCurrency = getExchangeAsHash();
+                tentativas++;
+            }
 
-                if (tentativas == MAX_ATEMPT && !isValidHash()){
-                    currencyListLoaded = false;
-                }
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
+            if (tentativas == MAX_ATEMPT && !isValidHash()){
+                currencyListLoaded = false;
             }
         }
     }

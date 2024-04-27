@@ -1,7 +1,9 @@
 package br.com;
 
-import br.com.domain.exception.InvalidConversionValue;
-import br.com.domain.exception.InvalidCurrencyException;
+import br.com.domain.exceptions.conversorexception.InvalidConversionValue;
+import br.com.domain.exceptions.conversorexception.InvalidCurrencyException;
+import br.com.domain.exceptions.conversorexception.InvalidCurrencyHashException;
+import br.com.domain.exceptions.jsonhandlerexception.InvalidJsonConversion;
 import br.com.usecase.ConversorUseCase;
 
 import java.util.Scanner;
@@ -90,7 +92,7 @@ public class App {
                         System.out.println("Entrada invalida.");
                         break;
                 }
-            } catch (InvalidConversionValue | InvalidCurrencyException error) {
+            } catch (InvalidCurrencyHashException | InvalidConversionValue | InvalidCurrencyException | InvalidJsonConversion error) {
                 System.out.println(error.getMessage());
             }
         }
