@@ -1,8 +1,8 @@
-package br.com.domain.exception;
+package br.com.domain.exceptions.conversorexception;
 
 public class InvalidConversionValue extends Exception{
 
     public InvalidConversionValue(String msg){
-        super(msg);
+        super("Exception: " + msg);
     }
 }
