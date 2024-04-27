@@ -1,5 +1,7 @@
 package br.com;
 
+import br.com.domain.exception.InvalidConversionValue;
+import br.com.domain.exception.InvalidCurrencyException;
 import br.com.usecase.ConversorUseCase;
 
 import java.util.Scanner;
@@ -38,54 +40,58 @@ public class App {
         {
             System.out.println(consoleText);
             entrada = scanner.nextInt();
-            switch (entrada){
-                case 1:
-                    conversor.showCurrencyList();
-                    break;
-                case 2:
-                    conversor.convertCurrency("USD", "BRL", getInput(scanner));
-                    break;
-                case 3:
-                    conversor.convertCurrency("BRL", "USD", getInput(scanner));
-                    break;
-                case 4:
-                    conversor.convertCurrency("BRL", "KRW", getInput(scanner));
-                    break;
-                case 5:
-                    conversor.convertCurrency("KRW", "BRL", getInput(scanner));
-                    break;
-                case 6:
-                    conversor.convertCurrency("USD", "KRW", getInput(scanner));
-                    break;
-                case 7:
-                    conversor.convertCurrency("KRW", "USD", getInput(scanner));
-                    break;
+            try{
+                switch (entrada){
+                    case 1:
+                        conversor.showCurrencyList();
+                        break;
+                    case 2:
+                            conversor.convertCurrency("USD", "BRL", getInput(scanner));
+                        break;
+                    case 3:
+                        conversor.convertCurrency("BRL", "USD", getInput(scanner));
+                        break;
+                    case 4:
+                        conversor.convertCurrency("BRL", "KRW", getInput(scanner));
+                        break;
+                    case 5:
+                        conversor.convertCurrency("KRW", "BRL", getInput(scanner));
+                        break;
+                    case 6:
+                        conversor.convertCurrency("USD", "KRW", getInput(scanner));
+                        break;
+                    case 7:
+                        conversor.convertCurrency("KRW", "USD", getInput(scanner));
+                        break;
 
-                case 8:
-                    scanner.nextLine();
+                    case 8:
+                        scanner.nextLine();
 
-                    System.out.println("Escolha a moeda 1: ");
-                    String currency1 = scanner.nextLine();
+                        System.out.println("Escolha a moeda 1: ");
+                        String currency1 = scanner.nextLine();
 
 
-                    System.out.println("Escolha a moeda 2: ");
-                    String currency2 = scanner.nextLine();
+                        System.out.println("Escolha a moeda 2: ");
+                        String currency2 = scanner.nextLine();
 
-                    System.out.println("Insira valor para conversão: ");
-                    Double value = scanner.nextDouble();
+                        System.out.println("Insira valor para conversão: ");
+                        Double value = scanner.nextDouble();
 
-                    conversor.convertCurrency(currency1, currency2, value);
-                    break;
-                case 9:
-                    System.out.println("\n" + conversor.getConversionHistory());
-                    break;
-                case 10:
-                    entrada = -1;
-                    scanner.close();
-                    break;
-                default:
-                    System.out.println("Entrada invalida.");
-                    break;
+                        conversor.convertCurrency(currency1, currency2, value);
+                        break;
+                    case 9:
+                        System.out.println("\n" + conversor.getConversionHistory());
+                        break;
+                    case 10:
+                        entrada = -1;
+                        scanner.close();
+                        break;
+                    default:
+                        System.out.println("Entrada invalida.");
+                        break;
+                }
+            } catch (InvalidConversionValue | InvalidCurrencyException error) {
+                System.out.println(error.getMessage());
             }
         }
     }

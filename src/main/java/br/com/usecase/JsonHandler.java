@@ -6,6 +6,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.net.http.HttpResponse;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class JsonHandler {
     Gson gson;
@@ -24,18 +27,37 @@ public class JsonHandler {
         return parsedBody;
     }
 
-    public JsonObject getConversionRateAsJson(JsonElement parsedBody){
+    public JsonObject getConversionRateListAsJson(JsonElement parsedBody){
         JsonObject jsonBody = parsedBody.getAsJsonObject().getAsJsonObject("conversion_rates");
         return jsonBody;
     }
 
 
     public Double getConvertionRateAsDouble(JsonElement parsedBody, String param){
-
-
         JsonElement  conversionRateJson = parsedBody.getAsJsonObject().get(param);
         Double conversionRate = conversionRateJson.getAsDouble();
         System.out.println("taxa de conversão obtida: " + conversionRate.toString());
         return conversionRate;
+    }
+
+    public Map<String, Double> responseToHash(HttpResponse<String> response)
+    {
+        JsonObject currencyListJson =  getConversionRateListAsJson(parseResponseBody(response));
+        return mapCurrencyToHash(currencyListJson);
+    }
+
+    private Map<String, Double> mapCurrencyToHash(JsonObject currencyJsonObject){
+
+        Map<String, Double> hshCurrency = new HashMap<>();
+        Set<Map.Entry<String, JsonElement>> entries = currencyJsonObject.entrySet();
+
+        for (Map.Entry<String, JsonElement> entry: entries)
+        {
+            String currency                = entry.getKey();
+            double conversionRate = entry.getValue().getAsDouble();
+
+            hshCurrency.put(currency, conversionRate);
+        }
+        return  hshCurrency;
     }
 }

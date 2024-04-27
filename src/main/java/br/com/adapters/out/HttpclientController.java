@@ -93,4 +93,8 @@ public class HttpclientController implements HttpclientService {
             throw new RuntimeException(e);
         }
     }
+
+    public boolean isValidResponse(HttpResponse<String> response){
+        return (response != null && response.statusCode() == 200);
+    }
 }

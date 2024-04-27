@@ -2,15 +2,17 @@ package br.com.usecase;
 
 import br.com.adapters.out.Connectiondb;
 import br.com.adapters.out.HttpclientController;
+import br.com.domain.exception.InvalidConversionValue;
+import br.com.domain.exception.InvalidCurrencyException;
 import br.com.domain.model.ConvertionRec;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 
 public class ConversorUseCase {
@@ -20,6 +22,7 @@ public class ConversorUseCase {
     private final Connectiondb dbManager;
 
     private          Map<String, Double> hshCurrency;
+    private          boolean                        currencyListLoaded ;
 
     public            List<ConvertionRec> lstConvertionHistory;
 
@@ -28,15 +31,17 @@ public class ConversorUseCase {
 
     public ConversorUseCase() {
         this.exchangeController   = new HttpclientController(System.getenv("ExchangeListUri"), System.getenv("PairConversionUri"));
-        this.hshCurrency                = null;
         this.lstConvertionHistory = new ArrayList<>();
         this.jsonHandler                 = new JsonHandler();
         this.dbManager                   = new Connectiondb();
+
+        this.hshCurrency                = null;
+        this.currencyListLoaded = false;
     }
 
     public void init() {
         try {
-            this.hshCurrency = getExchange();
+            this.hshCurrency = getExchangeAsHash();
             dbManager.initConnection();
             dbManager.loadConversionHistory(lstConvertionHistory);
 
@@ -49,34 +54,21 @@ public class ConversorUseCase {
         return hshCurrency.containsKey(key);
     }
 
-    private  Map<String, Double> getExchange() throws IOException, InterruptedException {
+    private  Map<String, Double> getExchangeAsHash() throws IOException, InterruptedException {
 
-        Map<String, Double> result = null;
+        Map<String, Double> exchangeHash = null;
 
         HttpResponse<String> response = exchangeController.requestExchangeList();
 
-        if (response != null) {
+        if (exchangeController.isValidResponse(response)) {
+            exchangeHash = jsonHandler.responseToHash(response);
 
-            JsonObject currencyListJson =   jsonHandler.getConversionRateAsJson(jsonHandler.parseResponseBody(response));
-            result = mapCurrencyToHash(currencyListJson);
+            if (!exchangeHash.isEmpty()){
+                currencyListLoaded = true;
+            }
         }
 
-        return result;
-    }
-
-    private Map<String, Double> mapCurrencyToHash(JsonObject currencyJsonObject){
-
-        Map<String, Double> hshCurrency = new HashMap<>();
-        Set<Map.Entry<String, JsonElement>> entries = currencyJsonObject.entrySet();
-
-        for (Map.Entry<String, JsonElement> entry: entries)
-        {
-            String currency                = entry.getKey();
-            double conversionRate = entry.getValue().getAsDouble();
-
-            hshCurrency.put(currency, conversionRate);
-        }
-        return  hshCurrency;
+        return exchangeHash;
     }
 
     private Double calculateExchangeRate(String c1, String c2){
@@ -87,40 +79,39 @@ public class ConversorUseCase {
         return value * conversionRate;
     }
 
-    public void convertCurrency(String sourceCurrency, String targetCurrency, Double value){
+    public void convertCurrency(String sourceCurrency, String targetCurrency, Double value) throws InvalidConversionValue, InvalidCurrencyException {
+        String exceptionMsg = "";
 
-        try {
-            if (isValidCurrency(sourceCurrency) && isValidCurrency(targetCurrency)) {
+            if (canConvert(sourceCurrency,targetCurrency)) {
 
                 if (value >= 0) {
 
-                    System.out.printf("Convertendo de %s para %s.%n", sourceCurrency, targetCurrency);
-
+                    System.out.printf("Convertendo de %s para %s.", sourceCurrency, targetCurrency);
 
                     Double exchangeRate = getExchangeRate(sourceCurrency, targetCurrency);
                     Double calculatedValue = calculateConversion(value, exchangeRate);
 
                     ConvertionRec convertionRec = new ConvertionRec(
-                                                                                            sourceCurrency,
-                                                                                            targetCurrency,
-                                                                                            value,
-                                                                                            calculatedValue,
-                                                                                            exchangeRate,
-                                                                                            LocalDateTime.now());
+                            sourceCurrency,
+                            targetCurrency,
+                            value,
+                            calculatedValue,
+                            exchangeRate,
+                            LocalDateTime.now());
 
                     lstConvertionHistory.add(convertionRec);
                     dbManager.saveConversion(convertionRec);
                     System.out.println("Conversão feita com sucesso: " + convertionRec);
 
                 } else {
-                    System.out.println("Não é possivel realizar conversão com valor negativa");
+                    exceptionMsg = "Não é possivel realizar conversão com valor negativa %f".formatted(value);
+                    throw new InvalidConversionValue(exceptionMsg);
                 }
             } else {
-                System.out.println("Moeda inválida");
+                exceptionMsg = "Conversão inválida. Verifique se as moedas existem: : %s, %s".formatted(sourceCurrency, targetCurrency);
+                verifyCurrencyHash();
+                throw new InvalidCurrencyException(exceptionMsg);
             }
-        } catch (Exception error ){
-        }
-
     }
 
     private Double getExchangeRate(String currency1, String currency2){
@@ -159,6 +150,35 @@ public class ConversorUseCase {
         for(Map.Entry<String, Double> currency: hshCurrency.entrySet()){
             System.out.println("currency: "+ currency.getKey() + " rate: "+ currency.getValue());
         }
+    }
+
+    private void  verifyCurrencyHash() {
+        int MAX_ATEMPT = 3;
+
+        if(!isValidHash()) {
+            try {
+                int tentativas = 0;
+                while(tentativas<MAX_ATEMPT && !isValidHash()){
+                    hshCurrency = getExchangeAsHash();
+                    tentativas++;
+                }
+
+                if (tentativas == MAX_ATEMPT && !isValidHash()){
+                    currencyListLoaded = false;
+                }
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private boolean isValidHash(){
+        return hshCurrency != null && !hshCurrency.isEmpty();
+    }
+
+    private boolean canConvert(String sourceCurrency, String targetCurrency)
+    {
+        return isValidHash() && isValidCurrency(sourceCurrency) && isValidCurrency(targetCurrency);
     }
 
 }

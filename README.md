@@ -5,8 +5,8 @@
 Desenvolver um Conversor de Moedas que ofereça interação textual (via console) com os usuários, proporcionando no mínimo 6 opções distintas de conversões de moedas em um menu. A taxa de conversão não será estática, mas sim dinamicamente obtida por meio de uma API, garantindo dados precisos e em tempo real para uma experiência mais atualizada e eficaz.
 
 > OBS: Para que o sistemas execute corretamente, necessário configurar as variáveis e seus respectivos valores como:
-> - `ExchangeListUri`:  https<nolink>://v6.exchangerate-api.com/v6/API_KEY/latest/USD
-> - `PairConversionUri`: https<nolink>://v6.exchangerate-api.com/v6/API_KEY/pair/%s/%s/
+> - `ExchangeListUri`:  https<nolink>://v6.exchangerate-api.com/v6/%s/latest/USD
+> - `PairConversionUri`: https<nolink>://v6.exchangerate-api.com/v6/%s/pair/%s/%s
 > - `API_KEY`: Você pode obter chave para a conexão clicando neste [link](https://app.exchangerate-api.com/dashboard)
 
 ## Configuração Banco de dados
